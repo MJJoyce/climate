@@ -161,12 +161,24 @@ def run_evaluation():
                        for ds in target_datasets]
 
     # Subset the datasets
+    start = eval_bounds['start_time']
+    end = eval_bounds['end_time']
+
+    # Normalize all day values to the first of the month if we're not
+    # dealing with daily data.
+    if time_step != 'daily':
+        if start.day != 1:
+            start -= timedelta(days=start.day-1)
+
+        if end.day != 1:
+            end -= timedelta(days=end.day-1)
+
     subset = Bounds(eval_bounds['lat_min'],
                     eval_bounds['lat_max'],
                     eval_bounds['lon_min'],
                     eval_bounds['lon_max'],
-                    eval_bounds['start_time'],
-                    eval_bounds['end_time'])
+                    start,
+                    end)
 
     ref_dataset = dsp.subset(subset, ref_dataset)
     target_datasets = [dsp.subset(subset, ds)
