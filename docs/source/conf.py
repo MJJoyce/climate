@@ -291,6 +291,6 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['netCDF4', 'basemap']
+MOCK_MODULES = ['netCDF4', 'basemap', 'mpl_toolkits.basemap']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
