@@ -44,7 +44,7 @@ echo "                         Welcome to Easy OCW"
 echo "---------------------------------------------------------------------------"
 echo
 
-WITH_VIRTUAL_ENV=1
+WITH_VIRTUAL_ENV=0
 WITH_HOMEBREW=0
 WITH_INTERACT=1
 
@@ -56,7 +56,7 @@ do
             exit 1
             ;;
         e)
-            WITH_VIRTUAL_ENV=0
+            WITH_VIRTUAL_ENV=1
             ;;
         q)
             WITH_INTERACT=0
@@ -79,8 +79,8 @@ ENDINTRO
 if [ $WITH_VIRTUAL_ENV != 1 ]; then
 cat << VIRTUALENV_WARNING
 It is highly recommended that you allow Easy OCW to install the dependencies
-into a virtualenv environment to ensure that your gloval Python install is
-not affected. If you're unsure, don't pass any additional configuration flags
+into a virtualenv environment to ensure that your global Python install is
+not affected. If you're unsure, you should pass the -e flag
 to this script. If you aren't concerned, or you want to create your own
 virtualenv environment, then feel free to ignore this message.
 
@@ -91,7 +91,7 @@ read -p "Press [ENTER] to begin installation ..."
 fi
 
 header "Checking for pip ..."
-if [ ! command -v pip >/dev/null 2>$1 ]; then
+if [ ! command -v pip >/dev/null 2>&1 ]; then
     task "Unable to locate pip."
     task "Installing Distribute"
     curl http://python-distribute.org/distribute_setup.py | python >> install_log
@@ -108,13 +108,22 @@ fi
 if [ $WITH_VIRTUAL_ENV == 1 ]; then
     header "Setting up a virtualenv ..."
 
+    # Check if virtualenv is installed. If it's not, we'll install it for the user.
     if ! command -v virtualenv >/dev/null 2>&1; then
         task "Installing virtualenv ..."
         pip install virtualenv >> install_log
         subtask "done"
     fi
 
-    if [ ! type mkvirtualenv >/dev/null 2>&1 ]; then
+    # Check if virtualenvwrapper is installed or not. If it's not, we'll
+    # install it for the user. Why wouldn't you want to use virtualenvwrapper?!?!
+    # It's super awesome! By default, virtualenvwrapper installs to the same place
+    # as virtualenv so we'll look for the necessary scripts there. This is fairly
+    # brittle, but it should be sufficient for the majority of cases.
+    virtualEnvLoc=`which virtualenv`
+    virtualEnvWrapperLoc="${virtualEnvLoc}wrapper.sh"
+
+    if [ ! -f $virtualEnvWrapperLoc ]; then
         task "Installing virtualenvwrapper ..."
         pip install virtualenvwrapper >> install_log
         subtask "done"
@@ -122,10 +131,12 @@ if [ $WITH_VIRTUAL_ENV == 1 ]; then
         task "Setting/sourcing necessary virtualenv things ..."
         # Need to setup environment for virtualenv
         export WORKON_HOME=$HOME/.virtualenvs
-        virtualEnvLoc=`which virtualenv`
-        source "${virtualEnvLoc}wrapper.sh"
         subtask "done"
     fi
+
+    # Just to be safe, we'll source virtualenvwrapper. This is really only
+    # necessary if we installed it for the user.
+    source $virtualEnvWrapperLoc
 
     # Create a new environment for OCW work
     task "Creating a new environment ..."
